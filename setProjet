@@ -1,0 +1,1036 @@
+
+//-----------------------------  CONNECTIONfACTORY ----------------------------------------//
+package com.example.professoradm.aulatci200617.model.connection;
+
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+
+/**
+ * Created by ProfessorAdm on 20/06/2017.
+ */
+
+public class ConnectionFactory extends SQLiteOpenHelper {
+
+    public static final String DATABASE="empresa";
+    public static final int VERSION=1;
+
+    public ConnectionFactory(Context context){
+        super(context,DATABASE,null,VERSION);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+    StringBuilder sql=new StringBuilder();
+        sql.append("create table aluno(")
+                .append("alucod integer not null primary key,")
+                .append("alunome text not null,")
+                .append("alun1 double not null,")
+                .append("alun2 double not null,")
+                .append("alun3 double not null,")
+                .append("alumedia double not null);");
+        db.execSQL(sql.toString());
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    StringBuilder sql=new StringBuilder();
+        sql.append("drop table if exists aluno;");
+            db.execSQL(sql.toString());
+    }
+}
+
+//----------------------------- MODEL.DAO.AlunoDao -------------------------------------//
+package com.example.professoradm.aulatci200617.model.dao;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
+import android.widget.Toast;
+
+import com.example.professoradm.aulatci200617.model.bean.Aluno;
+import com.example.professoradm.aulatci200617.model.connection.ConnectionFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by ProfessorAdm on 20/06/2017.
+ */
+
+public class AlunoDao {
+    private ConnectionFactory connectionFactory;
+    List<Aluno> lista= new ArrayList<Aluno>();
+
+    public AlunoDao(Context context){//construtor conectando com o bd;
+
+        connectionFactory = new ConnectionFactory(context);
+    }
+
+    //metodo salvar
+    public void salvarAluno(Aluno aluno){
+        ContentValues values = new ContentValues();
+        values.put("alunome",aluno.getAlunome());
+        values.put("alun1",aluno.getAlun1());
+        values.put("alun2",aluno.getAlun2());
+        values.put("alun3",aluno.getAlun3());
+        values.put("alumedia",aluno.getAlumedia());
+        connectionFactory.getWritableDatabase().insert("aluno",null,values);
+        connectionFactory.close();
+
+
+    }
+
+    //metodo listar
+    public List<Aluno> listarAluno(){
+        String sql="SELECT * FROM ALUNO;";
+        Cursor cursor=connectionFactory.getWritableDatabase().rawQuery(sql,null);
+        while(cursor.moveToNext()){
+            Aluno aluno=new Aluno();
+            aluno.setAlucod(cursor.getInt(0));
+            aluno.setAlunome(cursor.getString(1));
+            aluno.setAlun1(cursor.getDouble(2));
+            aluno.setAlun2(cursor.getDouble(3));
+            aluno.setAlun3(cursor.getDouble(4));
+            aluno.setAlumedia(cursor.getDouble(5));
+            lista.add(aluno);
+        }
+        connectionFactory.close();
+
+        return lista;
+    }
+
+    public double calcularMediaAluno(double n1,double n2,double n3){
+        double media =0;
+        media=((n1+n2+n3)/3);
+        return media;
+    }
+
+
+}
+//----------------------------- MODEL.CONTROLLER.Listaraluno ------------------------------------------//
+package com.example.professoradm.aulatci200617.model.controller;
+
+import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+import com.example.professoradm.aulatci200617.R;
+import com.example.professoradm.aulatci200617.model.bean.Aluno;
+import com.example.professoradm.aulatci200617.model.dao.AlunoDao;
+
+import java.util.List;
+
+public class ListarAlunos extends AppCompatActivity {
+
+    private ListView listView;
+
+    private ArrayAdapter<Aluno> adapter;
+    private int layoutTela= android.R.layout.simple_list_item_1;
+
+    public void listarAdapter(){
+        AlunoDao alunoDao = new AlunoDao(this);
+        List<Aluno> listagemAdapter=alunoDao.listarAluno();
+        adapter = new ArrayAdapter<Aluno>(this,layoutTela,listagemAdapter);
+        listView.setAdapter(adapter);
+
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_listar_alunos);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        listView=(ListView)findViewById(R.id.idListViewListarAluno);
+
+        listarAdapter();
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+    }
+
+}
+
+//----------------------------- MODEL.CONTROLLE.CadastrarAluno  ----------------------------------//
+package com.example.professoradm.aulatci200617.model.controller;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.renderscript.Double2;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import com.example.professoradm.aulatci200617.R;
+import com.example.professoradm.aulatci200617.model.bean.Aluno;
+import com.example.professoradm.aulatci200617.model.dao.AlunoDao;
+
+public class CadastroDeAluno extends AppCompatActivity {
+
+    private EditText txtnome;
+    private EditText txtn1;
+    private EditText txtn2;
+    private EditText txtn3;
+    private Button btnsalvar;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_cadastro_de_aluno);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        txtnome=(EditText)findViewById(R.id.idTxtNomeAluno);
+        txtn1=(EditText)findViewById(R.id.idTxtN1Aluno);
+        txtn2=(EditText)findViewById(R.id.idTxtN2Aluno);
+        txtn3=(EditText)findViewById(R.id.idTxtN3Aluno);
+        btnsalvar=(Button)findViewById(R.id.idBtnSalvar);
+
+        final AlunoDao alunoDao = new AlunoDao(this);
+        btnsalvar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Aluno aluno = new Aluno();
+                aluno.setAlunome(txtnome.getText().toString());
+                aluno.setAlun1(Double.parseDouble(txtn1.getText().toString()));
+                aluno.setAlun2(Double.parseDouble(txtn2.getText().toString()));
+                aluno.setAlun3(Double.parseDouble(txtn3.getText().toString()));
+                aluno.setAlumedia(alunoDao.calcularMediaAluno(aluno.getAlun1(),aluno.getAlun2(),aluno.getAlun3()));
+                alunoDao.salvarAluno(aluno);
+                Toast.makeText(CadastroDeAluno.this,"DADOS SALVOS",Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_cadastro_de_aluno, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(CadastroDeAluno.this,ListarAlunos.class);
+            startActivity(intent);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+}
+
+//-------------------- dao -------------------------//
+package com.example.professoradm.prova01.model.dao;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+
+import com.example.professoradm.prova01.model.bean.Funcionario;
+import com.example.professoradm.prova01.model.connection.ConnectionFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by ProfessorAdm on 23/06/2017.
+ */
+
+public class FuncionarioDao {
+
+    private ConnectionFactory connectionFactory;
+    List<Funcionario> lista= new ArrayList<>();
+
+    public FuncionarioDao(Context context){
+        connectionFactory = new ConnectionFactory(context);
+    }
+
+    public void salvarFuncionario(Funcionario fun){
+
+        ContentValues values = new ContentValues();
+        values.put("funnome", fun.getFunnome());
+        values.put("funsalario", fun.getFunsalario());
+        values.put("funvalhora", fun.getFunvalhora());
+        values.put("funhorastrab", fun.getFunhorastrab());
+        values.put("funhorasex", fun.getFunhorasex());
+        values.put("funbonus", fun.getFunbonus());
+        values.put("funplano", fun.getFunplano());
+        values.put("fundesc", fun.getFundesc());
+        connectionFactory.getWritableDatabase().insert("funcionario", null, values);
+        connectionFactory.close();
+
+
+
+/*
+        .append("funcod Integer not null primary key, ")
+                .append("funnome text not null, ")
+                .append("funsalario double not null, ")
+                .append("funvalhora double not null, ")
+                .append("funhorastrab double not null, ")
+                .append("funhorasex double not null, ")
+                .append("funbonus double not null, ")
+                .append("funplano text not null);");
+  */
+    }
+    public List<Funcionario> listaFun(){
+        String sql= "select * from funcionario;";
+        Cursor cursor = connectionFactory.getWritableDatabase().rawQuery(sql, null);
+        while(cursor.moveToNext()){
+            Funcionario fun= new Funcionario();
+            fun.setFuncod(cursor.getInt(0));
+            fun.setFunnome(cursor.getString(1));
+            fun.setFunsalario(cursor.getDouble(2));
+            fun.setFunvalhora(cursor.getDouble(3));
+            fun.setFunhorastrab(cursor.getDouble(4));
+            fun.setFunhorasex(cursor.getDouble(5));
+            fun.setFunbonus(cursor.getDouble(6));
+            fun.setFunplano(cursor.getString(7));
+            fun.setFundesc(cursor.getDouble(8));
+            lista.add(fun);
+        }
+        connectionFactory.close();
+        return lista;
+    }
+
+    public double calcSalario (double valhora, double horatrab, double horaextra){
+        double total1=0;
+        double total2=0;
+        double total3=0;
+        total1 =horatrab*valhora;
+        total2 =horaextra*valhora;
+        total3 = total1+total2;
+        return total3;
+
+    }
+
+    public double calcBonus (double salario){
+        double total = 0;
+        total = (salario*0.10);
+        return total;
+
+    }
+
+    public double calcDesconto (double salario){
+        double total= 0;
+        total= (salario*0.20);
+        return total;
+    }
+
+    public List<Funcionario> listarporNome(String nome){
+        String sql="select * from funcionario where funnome like '"+nome+"%' ;";
+        Cursor cursor= connectionFactory.getWritableDatabase().rawQuery(sql,null);
+        while(cursor.moveToNext()){
+            Funcionario fun=new Funcionario();
+            fun.setFuncod(cursor.getInt(0));
+            fun.setFunnome(cursor.getString(1));
+            fun.setFunsalario(cursor.getDouble(2));
+            fun.setFunvalhora(cursor.getDouble(3));
+            fun.setFunhorastrab(cursor.getDouble(4));
+            fun.setFunhorasex(cursor.getDouble(5));
+            fun.setFunbonus(cursor.getDouble(6));
+            fun.setFunplano(cursor.getString(7));
+            fun.setFundesc(cursor.getDouble(8));
+            lista.add(fun);
+        }
+        connectionFactory.close();
+        return lista;
+
+    }
+    public void updateFuncionario(Funcionario fun){
+        ContentValues values = new ContentValues();
+        values.put("funnome", fun.getFunnome());
+        values.put("funsalario", fun.getFunsalario());
+        values.put("funvalhora", fun.getFunvalhora());
+        values.put("funhorastrab", fun.getFunhorastrab());
+        values.put("funhorasex", fun.getFunhorasex());
+        values.put("funbonus", fun.getFunbonus());
+        values.put("funplano", fun.getFunplano());
+        values.put("fundesc", fun.getFundesc());
+        String[]id= {fun.getFuncod().toString()};
+        connectionFactory.getWritableDatabase().update("funcionario",values, "funcod=?", id);
+        connectionFactory.close();
+    }
+
+    public void excluirFuncionario(Integer idFunc){
+        String[]id= {idFunc.toString()};
+        connectionFactory.getWritableDatabase().delete("funcionario","funcod=?",id);
+        //connectionFactory.close();
+    }
+
+}
+
+// -------------------------- controller funcionario ------------------------------------//
+package com.example.professoradm.prova01.controller;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.View;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
+
+import com.example.professoradm.prova01.R;
+import com.example.professoradm.prova01.model.bean.Funcionario;
+import com.example.professoradm.prova01.model.dao.FuncionarioDao;
+
+import java.util.List;
+
+public class ControllerFuncionario extends AppCompatActivity {
+
+    private EditText nome;
+    private EditText valhora;
+    private EditText horatrab;
+    private EditText horaextra;
+    private EditText plano;
+    private Button salvar;
+    private ListView listView;
+    private Button filtrar;
+
+
+    private ArrayAdapter<Funcionario> adapter;//adaptador para listar na activity
+    private int layoutTela= android.R.layout.simple_list_item_1;
+
+    public void listarAdapter(){
+        FuncionarioDao fdao= new FuncionarioDao(this);
+        List<Funcionario> listagemAdapter = fdao.listaFun();
+        adapter = new ArrayAdapter<Funcionario>(this,layoutTela, listagemAdapter);
+        listView.setAdapter(adapter);
+
+    }
+    public void alterar(Funcionario func){
+        nome.setText(func.getFunnome());
+        valhora.setText(String.valueOf(func.getFunvalhora()));
+        horatrab.setText(String.valueOf(func.getFunhorastrab()));
+        horaextra.setText(String.valueOf(func.getFunhorasex()));
+        plano.setText(func.getFunplano());
+
+    }
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_cadastro_funcionario);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        nome=(EditText)findViewById(R.id.idtxtnomefun);
+        valhora=(EditText)findViewById(R.id.idtxtvalhorafun);
+        horatrab=(EditText)findViewById(R.id.idtxthoratrabfun);
+        horaextra=(EditText)findViewById(R.id.idtxthoraextrafun);
+        plano=(EditText)findViewById(R.id.idtxtplanofun);
+        salvar=(Button)findViewById(R.id.idbtnsalvarfun);
+        listView=(ListView)findViewById(R.id.idlistview);
+        filtrar= (Button)findViewById(R.id.idtelafiltro);
+
+        final Funcionario funcAlterar= (Funcionario)getIntent().getSerializableExtra("funcionario");
+
+
+        final FuncionarioDao fdao= new FuncionarioDao(this);
+        if(funcAlterar!=null){
+            alterar(funcAlterar);
+
+        }
+        salvar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(funcAlterar==null) {
+
+
+                    Funcionario fun = new Funcionario();
+                    fun.setFunnome(nome.getText().toString());
+                    fun.setFunvalhora(Double.parseDouble(valhora.getText().toString()));
+                    fun.setFunhorasex(Double.parseDouble(horaextra.getText().toString()));
+                    fun.setFunplano(plano.getText().toString());
+                    fun.setFunhorastrab(Double.parseDouble(horatrab.getText().toString()));
+                    fun.setFunsalario(Double.parseDouble(String.valueOf(fdao.calcSalario(fun.getFunvalhora(), fun.getFunhorastrab(), fun.getFunhorasex()))));
+
+                    if (fun.getFunhorasex() > 0) {
+                        fun.setFunbonus(Double.parseDouble(String.valueOf(fdao.calcBonus(fun.getFunsalario()))));
+                    } else {
+                        fun.setFunbonus(0);
+                    }
+
+
+                    if (plano.getText().toString().equals("SIM")) {
+                        fun.setFundesc(Double.parseDouble(String.valueOf(fdao.calcDesconto(fun.getFunsalario()))));
+                    } else if (plano.getText().toString().equals("NAO")) {
+                        fun.setFundesc(0);
+                    }
+                    fdao.salvarFuncionario(fun);
+                    listarAdapter();
+                }else{
+                    funcAlterar.setFunnome(nome.getText().toString());
+                    funcAlterar.setFunvalhora(Double.parseDouble(valhora.getText().toString()));
+                    funcAlterar.setFunhorasex(Double.parseDouble(horaextra.getText().toString()));
+                    funcAlterar.setFunplano(plano.getText().toString());
+                    funcAlterar.setFunhorastrab(Double.parseDouble(horatrab.getText().toString()));
+                    funcAlterar.setFunsalario(Double.parseDouble(String.valueOf(fdao.calcSalario(funcAlterar.getFunvalhora(), funcAlterar.getFunhorastrab(), funcAlterar.getFunhorasex()))));
+
+                    if (funcAlterar.getFunhorasex() > 0) {
+                        funcAlterar.setFunbonus(Double.parseDouble(String.valueOf(fdao.calcBonus(funcAlterar.getFunsalario()))));
+                    } else {
+                        funcAlterar.setFunbonus(0);
+                    }
+
+
+                    if (plano.getText().toString().equals("SIM")) {
+                        funcAlterar.setFundesc(Double.parseDouble(String.valueOf(fdao.calcDesconto(funcAlterar.getFunsalario()))));
+                    } else if (plano.getText().toString().equals("NAO")) {
+                        funcAlterar.setFundesc(0);
+                    }
+                    fdao.updateFuncionario(funcAlterar);
+                    finish();
+                }
+            }
+        });
+        filtrar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(ControllerFuncionario.this, FiltrarFuncionario.class);
+                startActivity(intent);
+            }
+        });
+
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_cadastro_funcionario, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(ControllerFuncionario.this, ListarFunc.class);
+            startActivity(intent);
+            return true;
+        }
+        if (id == R.id.filtraFunc) {
+            Intent intent = new Intent(ControllerFuncionario.this, FiltrarFuncionario.class);
+            startActivity(intent);
+            return true;
+        }
+        if (id == R.id.cadastroFunc) {
+            Intent intent = new Intent(ControllerFuncionario.this, ControllerFuncionario.class);
+            startActivity(intent);
+            return true;
+        }
+
+
+        return super.onOptionsItemSelected(item);
+    }
+}
+
+//----------------------------------------- fitrar funcionariop  ---------------------------------//
+
+package com.example.professoradm.prova01.controller;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
+
+import com.example.professoradm.prova01.R;
+import com.example.professoradm.prova01.model.bean.Funcionario;
+import com.example.professoradm.prova01.model.dao.FuncionarioDao;
+
+import java.util.List;
+
+public class FiltrarFuncionario extends AppCompatActivity {
+
+    private EditText consulta;
+    private Button pesquisar,voltar,limpar;
+    private ListView listViewPorNome;
+    private ArrayAdapter<Funcionario> adapter;//adaptador para listar na activity
+    private int layoutTela= android.R.layout.simple_list_item_1;
+
+    public void filtrarFunc(){
+        FuncionarioDao fdao= new FuncionarioDao(this);
+        List<Funcionario> listagemAdapter = fdao.listarporNome(consulta.getText().toString());
+        adapter = new ArrayAdapter<Funcionario>(this,layoutTela, listagemAdapter);
+        listViewPorNome.setAdapter(adapter);
+
+    }
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_filtrar_funcionario);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        consulta= (EditText)findViewById(R.id.idtxtconsulta);
+        pesquisar= (Button)findViewById(R.id.idbtnconsulta);
+        voltar= (Button)findViewById(R.id.idbtnVoltar);
+        limpar= (Button)findViewById(R.id.idbtnLimpar);
+        listViewPorNome= (ListView)findViewById(R.id.listViewFiltrarFunc);
+        final FuncionarioDao fundao=new FuncionarioDao(this);
+
+
+        filtrarFunc();
+        //ação do butão concultar funcionario
+        pesquisar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+               // Funcionario fun=new Funcionario();
+                filtrarFunc();
+            }
+        });
+        //ação do butão limpar tela do filtrar funcionario
+        limpar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent= new Intent(FiltrarFuncionario.this,FiltrarFuncionario.class);
+                startActivity(intent);
+            }
+        });
+        //ação do butão voltar ao cadastro
+        voltar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(FiltrarFuncionario.this, ControllerFuncionario.class);
+                startActivity(intent);
+            }
+        });
+        listViewPorNome.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int posicao, long l) {
+                final Funcionario fun= (Funcionario)adapterView.getItemAtPosition(posicao);
+                AlertDialog.Builder dialogo= new AlertDialog.Builder(FiltrarFuncionario.this);
+                dialogo.setMessage("Deseja Alterar?");
+                dialogo.setPositiveButton("SIM", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Intent intent= new Intent(FiltrarFuncionario.this,ControllerFuncionario.class);
+                        intent.putExtra("funcionario",fun);
+                        startActivity(intent);
+                    }
+                });
+                dialogo.setNegativeButton("NAO", null);
+                AlertDialog alerta= dialogo.create();
+                alerta.setTitle("ALTERAÇÃO");
+                alerta.show();
+
+
+            }
+        });
+        listViewPorNome.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int posicao, long l) {
+                final Funcionario func= (Funcionario)adapterView.getItemAtPosition(posicao);
+                AlertDialog.Builder dialogo= new AlertDialog.Builder(FiltrarFuncionario.this);
+                dialogo.setMessage("Deseja Excluir?");
+                dialogo.setPositiveButton("SIM", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        FuncionarioDao fdao= new FuncionarioDao(FiltrarFuncionario.this);
+                        fdao.excluirFuncionario(func.getFuncod());
+
+                    }
+                });
+                dialogo.setNegativeButton("NAO", null);
+                AlertDialog alerta = dialogo.create();
+                alerta.setTitle("EXCLUSAO");
+                alerta.show();
+                return true;
+            }
+        });
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Ação ainda não configurada", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+    }
+//Menu itens
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_cadastro_funcionario, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(FiltrarFuncionario.this, ListarFunc.class);
+            startActivity(intent);
+            return true;
+        }
+        if (id == R.id.filtraFunc) {
+            Intent intent = new Intent(FiltrarFuncionario.this, FiltrarFuncionario.class);
+            startActivity(intent);
+            return true;
+        }
+        if (id == R.id.cadastroFunc) {
+            Intent intent = new Intent(FiltrarFuncionario.this, ControllerFuncionario.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+}
+//--------------------------  listar funciponario --------------------//
+package com.example.professoradm.prova01.controller;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+
+import com.example.professoradm.prova01.R;
+import com.example.professoradm.prova01.model.bean.Funcionario;
+import com.example.professoradm.prova01.model.dao.FuncionarioDao;
+
+import java.util.List;
+
+public class ListarFunc extends AppCompatActivity {
+
+    private ListView listView;
+    private Button voltar;
+
+    private ArrayAdapter<Funcionario> adapter;//adaptador para listar na activity
+    private int layoutTela= android.R.layout.simple_list_item_1;
+
+    public void listarAdapter(){
+        FuncionarioDao fdao= new FuncionarioDao(this);
+        List<Funcionario> listagemAdapter = fdao.listaFun();
+        adapter = new ArrayAdapter<Funcionario>(this,layoutTela, listagemAdapter);
+        listView.setAdapter(adapter);
+
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_listar_func);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        listView=(ListView)findViewById(R.id.idlistview2);
+        voltar=(Button)findViewById(R.id.idbtnVoltarLista);
+
+
+        //acão do botao voltar
+        voltar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(ListarFunc.this,ControllerFuncionario.class);
+                startActivity(intent);
+            }
+        });
+        listarAdapter();
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+    }
+//MENU ITENS
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_cadastro_funcionario, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(ListarFunc.this, ListarFunc.class);
+            startActivity(intent);
+            return true;
+        }
+        if (id == R.id.filtraFunc) {
+            Intent intent = new Intent(ListarFunc.this, FiltrarFuncionario.class);
+            startActivity(intent);
+            return true;
+        }
+        if (id == R.id.cadastroFunc) {
+            Intent intent = new Intent(ListarFunc.this, ControllerFuncionario.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+}
+//------------------ Activiti cadastro funionario --/
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/content_cadastro_funcionario"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.example.professoradm.prova01.controller.ControllerFuncionario"
+    tools:showIn="@layout/activity_cadastro_funcionario">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/txtnome" />
+
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/idtxtnomefun"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/txtvalhora" />
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/idtxtvalhorafun"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/txthoratrab" />
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/idtxthoratrabfun"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/txthoraextra" />
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/idtxthoraextrafun"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/txtplano"/>
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/idtxtplanofun"/>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/idbtnsalvarfun"
+            android:text="@string/btnsalvar"
+            />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/idtelafiltro"
+            android:text="@string/telafiltrar"
+            android:layout_marginLeft="160dp"/>
+    </LinearLayout>
+    <ListView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/idlistview"></ListView>
+</LinearLayout>
+//-------------- Activit fitrar funcionario --------------------//
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/content_filtrar_funcionario"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.example.professoradm.prova01.controller.FiltrarFuncionario"
+    tools:showIn="@layout/activity_filtrar_funcionario">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PESQUISAR"
+        />
+
+    <EditText
+        android:id="@+id/idtxtconsulta"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pesquisar"
+            android:id="@+id/idbtnconsulta"/>
+        <Button
+            android:layout_marginLeft="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Limpar"
+            android:id="@+id/idbtnLimpar"/>
+        <Button
+            android:layout_marginLeft="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Voltar"
+            android:id="@+id/idbtnVoltar"/>
+    </LinearLayout>
+
+    <TextView
+        android:text="Listar Funcionario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <ListView
+        android:id="@+id/listViewFiltrarFunc"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"></ListView>
+
+</LinearLayout>
+//---------------- Activity listar funcionario ----------//
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/content_listar_func"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.example.professoradm.prova01.controller.ListarFunc"
+    tools:showIn="@layout/activity_listar_func">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Listagem"/>
+        <Button
+            android:layout_marginLeft="185dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Voltar"
+            android:id="@+id/idbtnVoltarLista"
+            />
+
+    </LinearLayout>
+
+    <ListView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/idlistview2"></ListView>
+
+</LinearLayout>
+
+
